@@ -37,7 +37,7 @@ public final class Orchestrator {
     private final Clock clock;
     private final Duration sessionTimeout;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2, r -> {
-        Thread t = new Thread(r, "devinbridge-scheduler");
+        Thread t = new Thread(r, "devinator-scheduler");
         t.setDaemon(true);
         return t;
     });

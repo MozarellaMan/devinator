@@ -1,10 +1,10 @@
-# DevinBridge
+# Devinator
 
 An event-driven automation that receives GitHub webhook events, orchestrates
 [Devin AI](https://devin.ai) sessions to remediate labelled issues, and reports the resulting pull request back on the
 issue + a live status dashboard.
 
-When an issue is labelled **`devin-fix`**, DevinBridge starts a Devin session asking it to fix that issue and open a PR,
+When an issue is labelled **`devin-fix`**, Devinator starts a Devin session asking it to fix that issue and open a PR,
 then polls the session to completion.
 
 ## Stack

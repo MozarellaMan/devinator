@@ -28,7 +28,7 @@ public final class Main {
 
     static void main() {
         Config config = Config.fromEnv();
-        log.info(() -> "Starting devinbridge for repo=" + config.targetRepo()
+        log.info(() -> "Starting devinator for repo=" + config.targetRepo()
                 + " mockDevin=" + config.mockDevin());
 
         SessionStore store = new SessionStore();
@@ -52,9 +52,9 @@ public final class Main {
             log.info("Shutting down");
             orchestrator.shutdown();
             webServer.stop();
-        }, "devinbridge-shutdown"));
+        }, "devinator-shutdown"));
 
-        log.info(() -> "devinbridge listening on port " + config.port());
+        log.info(() -> "devinator listening on port " + config.port());
     }
 
     private static Orchestrator createDevinSessionOrchestrator(Config config, SessionStore store) {

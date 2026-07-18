@@ -59,9 +59,18 @@ public final class WebServer {
     private void handleWebhook(Context ctx) {
         String body = ctx.body();
         String signature = ctx.header("X-Hub-Signature-256");
+        String githubEvent = ctx.header("X-GitHub-Event");
+
         if (!webhookVerifier.verify(body, signature)) {
-            log.warning("Rejected webhook: signature verification failed");
+            log.warning(() -> "Rejected webhook (X-GitHub-Event=" + githubEvent + "): signature verification failed");
             ctx.status(401).result("invalid signature");
+            return;
+        }
+
+        // Only "issues" events parse as GHEventPayload.Issue. Anything else (push, ping, etc.) we'll ignore
+        if (!"issues".equals(githubEvent)) {
+            log.info(() -> "Ignoring webhook: X-GitHub-Event=" + githubEvent + " (only \"issues\" events are handled)");
+            ctx.status(202).result("ignored");
             return;
         }
 
@@ -69,14 +78,18 @@ public final class WebServer {
         try {
             event = webhookParser.parse(body);
         } catch (IllegalArgumentException e) {
+            log.log(Level.WARNING, e,
+                    () -> "Rejected webhook (X-GitHub-Event=" + githubEvent + "): failed to parse as an issues payload");
             ctx.status(400).result("malformed payload");
             return;
         }
 
         if (event.isRelevant(Orchestrator.TARGET_LABEL)) {
+            log.info(() -> "Accepted webhook: action=" + event.action() + " issue=#" + event.issueNumber());
             orchestrator.onIssueEvent(event.issueNumber(), event.issueTitle(), event.labels(), repo);
         } else {
-            log.fine(() -> "Ignoring webhook action=" + event.action() + " for issue #" + event.issueNumber());
+            log.info(() -> "Ignoring webhook: action=" + event.action() + " issue=#" + event.issueNumber()
+                    + " (not opened/labeled with \"" + Orchestrator.TARGET_LABEL + "\")");
         }
         ctx.status(202).result("accepted");
     }

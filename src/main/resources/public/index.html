@@ -2,20 +2,68 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>DevinBridge</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <title>Devinator</title>
     <style>
+        @font-face {
+            font-family: "Iosevka";
+            src: url("/fonts/Iosevka-Regular.woff2") format("woff2");
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "Lora";
+            src: url("/fonts/Lora-SemiBold.woff2") format("woff2");
+            font-weight: 600;
+            font-style: normal;
+            font-display: swap;
+        }
+
         :root {
-            --bg: #0f1115;
-            --panel: #171a21;
-            --border: #262b36;
-            --text: #e6e9ef;
-            --muted: #8b93a7;
-            --accent: #5b8cff;
-            --queued: #8b93a7;
-            --running: #f2c94c;
-            --pr: #5b8cff;
-            --completed: #4cd98a;
-            --failed: #ef5959;
+            color-scheme: light dark;
+            --bg: #f5f5f3;
+            --surface: #ffffff;
+            --surface-subtle: #eeeeeb;
+            --border: #c9c9c3;
+            --border-strong: #92928b;
+            --text: #1d1d1b;
+            --muted: #666661;
+            --link: #2456a6;
+            --queued: #5f625f;
+            --queued-bg: #e4e5e2;
+            --running: #795800;
+            --running-bg: #f4e7b6;
+            --pr: #2456a6;
+            --pr-bg: #dce7f7;
+            --completed: #17653b;
+            --completed-bg: #d9ebdf;
+            --failed: #9b2727;
+            --failed-bg: #f2dcdc;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #111210;
+                --surface: #191a18;
+                --surface-subtle: #22231f;
+                --border: #3c3e38;
+                --border-strong: #686b62;
+                --text: #eeeeea;
+                --muted: #a3a49d;
+                --link: #8ab4f8;
+                --queued: #c2c4bd;
+                --queued-bg: #343631;
+                --running: #f0ce72;
+                --running-bg: #453b22;
+                --pr: #9ec1fa;
+                --pr-bg: #243751;
+                --completed: #86d5a5;
+                --completed-bg: #233d2c;
+                --failed: #f1a0a0;
+                --failed-bg: #492828;
+            }
         }
 
         * {
@@ -24,217 +72,330 @@
 
         body {
             margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            min-width: 320px;
+            padding: 40px 32px;
             background: var(--bg);
             color: var(--text);
-            padding: 32px;
+            font-family: "Iosevka", ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 14px;
+            line-height: 1.45;
         }
 
-        h1 {
-            font-size: 20px;
-            font-weight: 600;
-            margin: 0 0 4px;
+        main {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        .subtitle {
-            color: var(--muted);
-            font-size: 13px;
-            margin-bottom: 24px;
-        }
-
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px;
+        header {
             margin-bottom: 28px;
         }
 
-        .card {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 16px;
-        }
-
-        .card .count {
+        h1 {
+            margin: 0;
+            font-family: "Lora", Georgia, "Times New Roman", serif;
             font-size: 28px;
-            font-weight: 700;
+            font-weight: 600;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
         }
 
-        .card .label {
+        .subtitle {
+            margin: 3px 0 0;
+            color: var(--muted);
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            margin-bottom: 28px;
+            border: 1px solid var(--border-strong);
+            background: var(--surface);
+        }
+
+        .stat {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            min-width: 0;
+            padding: 13px 15px;
+            border-right: 1px solid var(--border);
+        }
+
+        .stat:last-child {
+            border-right: 0;
+        }
+
+        .stat-count {
+            min-width: 2ch;
+            font-size: 20px;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+        }
+
+        .stat-label {
+            overflow: hidden;
             color: var(--muted);
             font-size: 12px;
+            text-overflow: ellipsis;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-top: 4px;
+            white-space: nowrap;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border-strong);
+            background: var(--surface);
         }
 
         table {
             width: 100%;
+            min-width: 720px;
             border-collapse: collapse;
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            overflow: hidden;
         }
 
-        th, td {
-            text-align: left;
-            padding: 10px 14px;
+        th,
+        td {
+            padding: 11px 14px;
             border-bottom: 1px solid var(--border);
-            font-size: 13px;
+            text-align: left;
+            vertical-align: middle;
         }
 
         th {
+            background: var(--surface-subtle);
             color: var(--muted);
-            font-weight: 500;
-            text-transform: uppercase;
             font-size: 11px;
-            letter-spacing: 0.05em;
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
         }
 
-        tr:last-child td {
-            border-bottom: none;
+        tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .issue,
+        .elapsed {
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .title {
+            width: 100%;
         }
 
         .badge {
             display: inline-block;
-            padding: 2px 10px;
-            border-radius: 999px;
+            padding: 2px 7px;
+            background: var(--queued-bg);
+            color: var(--queued);
             font-size: 11px;
             font-weight: 600;
-        }
-
-        .badge.QUEUED {
-            background: rgba(139, 147, 167, 0.15);
-            color: var(--queued);
+            line-height: 1.4;
+            white-space: nowrap;
         }
 
         .badge.RUNNING {
-            background: rgba(242, 201, 76, 0.15);
+            background: var(--running-bg);
             color: var(--running);
         }
 
         .badge.PR_OPENED {
-            background: rgba(91, 140, 255, 0.15);
+            background: var(--pr-bg);
             color: var(--pr);
         }
 
         .badge.COMPLETED {
-            background: rgba(76, 217, 138, 0.15);
+            background: var(--completed-bg);
             color: var(--completed);
         }
 
         .badge.FAILED {
-            background: rgba(239, 89, 89, 0.15);
+            background: var(--failed-bg);
             color: var(--failed);
         }
 
+        .failure-reason {
+            display: block;
+            max-width: 32ch;
+            margin-top: 4px;
+            color: var(--failed);
+            font-size: 12px;
+        }
+
         a {
-            color: var(--accent);
-            text-decoration: none;
+            color: var(--link);
+            text-underline-offset: 3px;
         }
 
         a:hover {
-            text-decoration: underline;
+            text-decoration-thickness: 2px;
+        }
+
+        a:focus-visible {
+            outline: 2px solid currentColor;
+            outline-offset: 3px;
         }
 
         .empty {
+            padding: 36px 16px;
             color: var(--muted);
             text-align: center;
-            padding: 32px;
         }
 
         .footer {
+            margin: 12px 0 0;
             color: var(--muted);
             font-size: 12px;
-            margin-top: 16px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        @media (max-width: 720px) {
+            body {
+                padding: 28px 18px;
+            }
+
+            header,
+            .summary {
+                margin-bottom: 22px;
+            }
+
+            .summary {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .stat {
+                border-bottom: 1px solid var(--border);
+            }
+
+            .stat:nth-child(2n) {
+                border-right: 0;
+            }
+
+            .stat:last-child {
+                border-bottom: 0;
+            }
         }
     </style>
 </head>
 <body>
-<h1>DevinBridge</h1>
-<div class="subtitle">GitHub issue &rarr; Devin remediation dashboard</div>
+<main>
+    <header>
+        <h1>Devinator</h1>
+        <p class="subtitle">GitHub issue &rarr; Devin remediation dashboard</p>
+    </header>
 
-<div class="cards" id="cards"></div>
+    <section aria-label="Session totals" class="summary" id="summary"></section>
 
-<table>
-    <thead>
-    <tr>
-        <th>Issue</th>
-        <th>Title</th>
-        <th>State</th>
-        <th>PR</th>
-        <th>Elapsed</th>
-    </tr>
-    </thead>
-    <tbody id="rows"></tbody>
-</table>
+    <div class="table-wrap">
+        <table>
+            <thead>
+            <tr>
+                <th scope="col">Issue</th>
+                <th scope="col">Title</th>
+                <th scope="col">State</th>
+                <th scope="col">Pull request</th>
+                <th scope="col">Elapsed</th>
+            </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+        </table>
+    </div>
 
-<div class="footer" id="footer">Loading&hellip;</div>
+    <p aria-live="polite" class="footer" id="footer" role="status">Loading&hellip;</p>
+</main>
 
 <script>
-    const CARD_ORDER = [
+    const STATE_ORDER = [
         ["QUEUED", "Queued"],
         ["RUNNING", "Running"],
-        ["PR_OPENED", "PR Opened"],
+        ["PR_OPENED", "PR opened"],
         ["COMPLETED", "Completed"],
         ["FAILED", "Failed"],
     ];
 
     function fmtElapsed(seconds) {
         if (seconds < 60) return seconds + "s";
-        const m = Math.floor(seconds / 60);
-        const s = seconds % 60;
-        if (m < 60) return m + "m " + s + "s";
-        const h = Math.floor(m / 60);
-        return h + "h " + (m % 60) + "m";
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        if (minutes < 60) return minutes + "m " + remainingSeconds + "s";
+        const hours = Math.floor(minutes / 60);
+        return hours + "h " + (minutes % 60) + "m";
+    }
+
+    function escapeHtml(value) {
+        const element = document.createElement("div");
+        element.textContent = value;
+        return element.innerHTML;
+    }
+
+    function safeHttpUrl(value) {
+        if (!value) return null;
+        try {
+            const url = new URL(value);
+            return url.protocol === "http:" || url.protocol === "https:" ? url.href : null;
+        } catch (_) {
+            return null;
+        }
     }
 
     function render(data) {
-        const cardsEl = document.getElementById("cards");
-        cardsEl.innerHTML = CARD_ORDER.map(([key, label]) => {
-            const count = data.counts[key] || 0;
-            return `<div class="card"><div class="count">${count}</div><div class="label">${label}</div></div>`;
-        }).join("");
+        document.getElementById("summary").innerHTML = STATE_ORDER
+            .map(([key, label]) => `
+                <div class="stat">
+                    <span class="stat-count">${data.counts[key] || 0}</span>
+                    <span class="stat-label">${label}</span>
+                </div>
+            `)
+            .join("");
 
-        const rowsEl = document.getElementById("rows");
+        const rows = document.getElementById("rows");
         if (data.sessions.length === 0) {
-            rowsEl.innerHTML = `<tr><td colspan="5" class="empty">No tracked issues yet. Label an issue "devin-fix" to get started.</td></tr>`;
+            rows.innerHTML = `
+                <tr>
+                    <td colspan="5" class="empty">No tracked issues yet. Label an issue "devin-fix" to get started.</td>
+                </tr>
+            `;
         } else {
-            rowsEl.innerHTML = data.sessions
+            rows.innerHTML = data.sessions
                 .slice()
                 .sort((a, b) => b.issueNumber - a.issueNumber)
-                .map(s => `
-        <tr>
-          <td>#${s.issueNumber}</td>
-          <td>${escapeHtml(s.issueTitle)}</td>
-          <td><span class="badge ${s.state}">${s.state.replace("_", " ")}</span>${s.failureReason ? ` <span title="${escapeHtml(s.failureReason)}">&#9432;</span>` : ""}</td>
-          <td>${s.prUrl ? `<a href="${s.prUrl}" target="_blank" rel="noopener">view</a>` : "&mdash;"}</td>
-          <td>${fmtElapsed(s.elapsedSeconds)}</td>
-        </tr>
-      `).join("");
+                .map(session => {
+                    const prUrl = safeHttpUrl(session.prUrl);
+                    const failureReason = session.failureReason
+                        ? `<span class="failure-reason">${escapeHtml(session.failureReason)}</span>`
+                        : "";
+
+                    return `
+                        <tr>
+                            <td class="issue">#${session.issueNumber}</td>
+                            <td class="title">${escapeHtml(session.issueTitle)}</td>
+                            <td>
+                                <span class="badge ${session.state}">${session.state.replace("_", " ")}</span>
+                                ${failureReason}
+                            </td>
+                            <td>${prUrl ? `<a href="${escapeHtml(prUrl)}" target="_blank" rel="noopener">Open PR</a>` : "&mdash;"}</td>
+                            <td class="elapsed">${fmtElapsed(session.elapsedSeconds)}</td>
+                        </tr>
+                    `;
+                })
+                .join("");
         }
 
-        const avg = data.metrics.avgCompletedDurationSeconds;
-        const avgText = avg == null ? "n/a" : fmtElapsed(Math.round(avg));
+        const average = data.metrics.avgCompletedDurationSeconds;
+        const averageText = average == null ? "n/a" : fmtElapsed(Math.round(average));
         document.getElementById("footer").textContent =
-            `${data.metrics.totalTracked} tracked · avg completed duration: ${avgText} · last updated ${new Date().toLocaleTimeString()}`;
-    }
-
-    function escapeHtml(s) {
-        const div = document.createElement("div");
-        div.textContent = s;
-        return div.innerHTML;
+            `${data.metrics.totalTracked} tracked · avg completed duration: ${averageText} · updated ${new Date().toLocaleTimeString()}`;
     }
 
     async function refresh() {
         try {
-            const res = await fetch("/status");
-            const data = await res.json();
-            render(data);
-        } catch (e) {
-            document.getElementById("footer").textContent = "Failed to load status: " + e;
+            const response = await fetch("/status");
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            render(await response.json());
+        } catch (error) {
+            document.getElementById("footer").textContent = "Failed to load status: " + error.message;
         }
     }
 

@@ -38,7 +38,7 @@ public final class HttpDevinClient implements DevinClient {
     public String createSession(String prompt, String repo) {
         try {
             var body = new DevinApiDto.CreateSessionRequest(
-                    prompt, "devinbridge: " + repo, List.of());
+                    prompt, "devinator: " + repo, List.of());
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + "/v3/organizations/" + orgId + "/sessions"))
                     .header("Authorization", "Bearer " + apiKey)
