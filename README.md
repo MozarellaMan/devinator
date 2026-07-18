@@ -7,9 +7,11 @@ issue + a live status dashboard.
 When an issue is labelled **`devin-fix`**, Devinator starts a Devin session asking it to fix that issue and open a PR,
 then polls the session to completion.
 
-## Stack
+## Dependencies / Stack
 
-Java 25 · Gradle · Javalin 7
+- JDK 25
+- Gradle
+- Javalin
 
 ## Quick start (offline, no credentials)
 
