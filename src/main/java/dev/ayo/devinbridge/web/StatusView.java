@@ -11,9 +11,7 @@ import java.util.Map;
 
 /**
  * JSON shape returned by {@code GET /status}: every tracked session, summary counts
- * by state, and a couple of simple derived metrics. This is the one place that
- * flattens {@link SessionState}'s sealed hierarchy into a shape the dashboard's plain
- * JS can read without knowing about the state machine.
+ * by state, and a couple of simple derived metrics.
  */
 public record StatusView(List<SessionView> sessions, Map<String, Long> counts, Metrics metrics) {
 
