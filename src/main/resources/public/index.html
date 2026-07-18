@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DevinBridge</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #171a21;
+            --border: #262b36;
+            --text: #e6e9ef;
+            --muted: #8b93a7;
+            --accent: #5b8cff;
+            --queued: #8b93a7;
+            --running: #f2c94c;
+            --pr: #5b8cff;
+            --completed: #4cd98a;
+            --failed: #ef5959;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 32px;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 0 4px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 24px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .card .count {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .card .label {
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+        th {
+            color: var(--muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge.QUEUED {
+            background: rgba(139, 147, 167, 0.15);
+            color: var(--queued);
+        }
+
+        .badge.RUNNING {
+            background: rgba(242, 201, 76, 0.15);
+            color: var(--running);
+        }
+
+        .badge.PR_OPENED {
+            background: rgba(91, 140, 255, 0.15);
+            color: var(--pr);
+        }
+
+        .badge.COMPLETED {
+            background: rgba(76, 217, 138, 0.15);
+            color: var(--completed);
+        }
+
+        .badge.FAILED {
+            background: rgba(239, 89, 89, 0.15);
+            color: var(--failed);
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .empty {
+            color: var(--muted);
+            text-align: center;
+            padding: 32px;
+        }
+
+        .footer {
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+<h1>DevinBridge</h1>
+<div class="subtitle">GitHub issue &rarr; Devin remediation dashboard</div>
+
+<div class="cards" id="cards"></div>
+
+<table>
+    <thead>
+    <tr>
+        <th>Issue</th>
+        <th>Title</th>
+        <th>State</th>
+        <th>PR</th>
+        <th>Elapsed</th>
+    </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+</table>
+
+<div class="footer" id="footer">Loading&hellip;</div>
+
+<script>
+    const CARD_ORDER = [
+        ["QUEUED", "Queued"],
+        ["RUNNING", "Running"],
+        ["PR_OPENED", "PR Opened"],
+        ["COMPLETED", "Completed"],
+        ["FAILED", "Failed"],
+    ];
+
+    function fmtElapsed(seconds) {
+        if (seconds < 60) return seconds + "s";
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        if (m < 60) return m + "m " + s + "s";
+        const h = Math.floor(m / 60);
+        return h + "h " + (m % 60) + "m";
+    }
+
+    function render(data) {
+        const cardsEl = document.getElementById("cards");
+        cardsEl.innerHTML = CARD_ORDER.map(([key, label]) => {
+            const count = data.counts[key] || 0;
+            return `<div class="card"><div class="count">${count}</div><div class="label">${label}</div></div>`;
+        }).join("");
+
+        const rowsEl = document.getElementById("rows");
+        if (data.sessions.length === 0) {
+            rowsEl.innerHTML = `<tr><td colspan="5" class="empty">No tracked issues yet. Label an issue "devin-fix" to get started.</td></tr>`;
+        } else {
+            rowsEl.innerHTML = data.sessions
+                .slice()
+                .sort((a, b) => b.issueNumber - a.issueNumber)
+                .map(s => `
+        <tr>
+          <td>#${s.issueNumber}</td>
+          <td>${escapeHtml(s.issueTitle)}</td>
+          <td><span class="badge ${s.state}">${s.state.replace("_", " ")}</span>${s.failureReason ? ` <span title="${escapeHtml(s.failureReason)}">&#9432;</span>` : ""}</td>
+          <td>${s.prUrl ? `<a href="${s.prUrl}" target="_blank" rel="noopener">view</a>` : "&mdash;"}</td>
+          <td>${fmtElapsed(s.elapsedSeconds)}</td>
+        </tr>
+      `).join("");
+        }
+
+        const avg = data.metrics.avgCompletedDurationSeconds;
+        const avgText = avg == null ? "n/a" : fmtElapsed(Math.round(avg));
+        document.getElementById("footer").textContent =
+            `${data.metrics.totalTracked} tracked · avg completed duration: ${avgText} · last updated ${new Date().toLocaleTimeString()}`;
+    }
+
+    function escapeHtml(s) {
+        const div = document.createElement("div");
+        div.textContent = s;
+        return div.innerHTML;
+    }
+
+    async function refresh() {
+        try {
+            const res = await fetch("/status");
+            const data = await res.json();
+            render(data);
+        } catch (e) {
+            document.getElementById("footer").textContent = "Failed to load status: " + e;
+        }
+    }
+
+    refresh();
+    setInterval(refresh, 5000);
+</script>
+</body>
+</html>

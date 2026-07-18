@@ -1,0 +1,33 @@
+{
+  "action": "labeled",
+  "issue": {
+    "number": 42,
+    "title": "Null pointer exception on empty cart checkout",
+    "state": "open",
+    "labels": [
+      {
+        "id": 1,
+        "name": "bug",
+        "color": "d73a4a"
+      },
+      {
+        "id": 2,
+        "name": "devin-fix",
+        "color": "0e8a16"
+      }
+    ]
+  },
+  "label": {
+    "id": 2,
+    "name": "devin-fix",
+    "color": "0e8a16"
+  },
+  "repository": {
+    "id": 123456,
+    "name": "widgets",
+    "full_name": "acme/widgets"
+  },
+  "sender": {
+    "login": "octocat"
+  }
+}

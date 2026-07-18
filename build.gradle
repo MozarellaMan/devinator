@@ -1,0 +1,55 @@
+plugins {
+    id 'application'
+}
+
+group = 'dev.ayo'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'io.javalin:javalin:6.3.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2'
+
+    // De-facto-standard Java GitHub client: replaces our hand-rolled REST client,
+    // webhook payload parsing, and GitHub DTOs. (Devin has no Java SDK, so that
+    // client stays hand-rolled.)
+    implementation 'org.kohsuke:github-api:1.330'
+
+    // Javalin logs via slf4j; keep it simple and quiet.
+    implementation 'org.slf4j:slf4j-simple:2.0.16'
+
+    testImplementation platform('org.junit:junit-bom:5.11.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.mockito:mockito-core:5.14.2'
+}
+
+application {
+    mainClass = 'dev.ayo.devinbridge.Main'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// Produce a single runnable jar with dependencies bundled, so the
+// Dockerfile runtime stage only needs `java -jar app.jar`.
+jar {
+    manifest {
+        attributes 'Main-Class': application.mainClass
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
