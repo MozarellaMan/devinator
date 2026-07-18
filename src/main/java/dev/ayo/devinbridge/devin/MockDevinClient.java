@@ -40,4 +40,10 @@ public final class MockDevinClient implements DevinClient {
         String prUrl = "https://github.com/mock-org/mock-repo/pull/" + Math.abs(sessionId.hashCode() % 1000);
         return new StatusSnapshot(sessionId, DevinStatus.FINISHED, prUrl);
     }
+
+    @Override
+    public void terminateSession(String sessionId) {
+        // No-op: mock sessions jump straight Running -> Completed via getStatus above,
+        // so pollPrOpenSession (the only caller of terminateSession) never runs for them.
+    }
 }

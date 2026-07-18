@@ -21,18 +21,19 @@ public record StatusView(List<SessionView> sessions, Map<String, Long> counts, M
 
         List<SessionView> views = all.stream().map(t -> toView(t, now)).toList();
 
-        double avgCompleted = all.stream()
-                .map(TrackedSession::state)
-                .filter(SessionState.Completed.class::isInstance)
-                .map(SessionState.Completed.class::cast)
-                .mapToLong(c -> c.took().toSeconds())
+        double avgTimeToPrOpen = all.stream()
+                .filter(t -> t.state() instanceof SessionState.PrOpened)
+                .mapToLong(t -> {
+                    SessionState.PrOpened prOpened = (SessionState.PrOpened) t.state();
+                    return Duration.between(t.createdAt(), prOpened.at()).toSeconds();
+                })
                 .average()
                 .orElse(Double.NaN);
 
         return new StatusView(
                 views,
                 store.countsByState(),
-                new Metrics(all.size(), Double.isNaN(avgCompleted) ? null : avgCompleted));
+                new Metrics(all.size(), Double.isNaN(avgTimeToPrOpen) ? null : avgTimeToPrOpen));
     }
 
     private static SessionView toView(TrackedSession t, Instant now) {
@@ -70,6 +71,6 @@ public record StatusView(List<SessionView> sessions, Map<String, Long> counts, M
 
     }
 
-    public record Metrics(long totalTracked, Double avgCompletedDurationSeconds) {
+    public record Metrics(long totalTracked, Double avgTimeToPrOpenSeconds) {
     }
 }

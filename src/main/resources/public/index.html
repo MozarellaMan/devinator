@@ -383,10 +383,10 @@
                 .join("");
         }
 
-        const average = data.metrics.avgCompletedDurationSeconds;
+        const average = data.metrics.avgTimeToPrOpenSeconds;
         const averageText = average == null ? "n/a" : fmtElapsed(Math.round(average));
         document.getElementById("footer").textContent =
-            `${data.metrics.totalTracked} tracked · avg completed duration: ${averageText} · updated ${new Date().toLocaleTimeString()}`;
+            `${data.metrics.totalTracked} tracked · avg time to PR open: ${averageText} · updated ${new Date().toLocaleTimeString()}`;
     }
 
     async function refresh() {

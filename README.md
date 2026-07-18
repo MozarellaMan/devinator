@@ -112,6 +112,8 @@ GitHub issue labelled "devin-fix"
   `DevinStatus.fromRaw` collapses this back down to the five states our state machine actually cares about which is the
   completion of the session (`running` + `finished`). These statuses; `suspended`/`error`/
   `exit` will all fail the session. (`DEVIN_TIMEOUT_MINUTES`) also fails a session that never resolves either way.
+- **Completion signal once a PR is open.** We're terminating devin sessions once the raised PR has been merged or
+  closed.
 - **Persistence** State is in-memory and intentionally not persisted
 - **Webhook auth** HMAC verification is optional and gated on `GITHUB_WEBHOOK_SECRET`
 

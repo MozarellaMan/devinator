@@ -88,4 +88,26 @@ public final class HttpDevinClient implements DevinClient {
             throw new DevinApiException("getStatus request failed", e);
         }
     }
+
+    @Override
+    public void terminateSession(String sessionId) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/v3/organizations/" + orgId + "/sessions/" + sessionId))
+                    .header("Authorization", "Bearer " + apiKey)
+                    .DELETE()
+                    .build();
+
+            HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() / 100 != 2) {
+                throw new DevinApiException(
+                        "terminateSession failed: HTTP " + response.statusCode() + " " + response.body());
+            }
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new DevinApiException("terminateSession request failed", e);
+        }
+    }
 }

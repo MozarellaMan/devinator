@@ -1,10 +1,7 @@
 package dev.ayo.devinbridge.orchestrator;
 
 import dev.ayo.devinbridge.devin.DevinClient;
-import dev.ayo.devinbridge.domain.DevinStatus;
-import dev.ayo.devinbridge.domain.SessionState;
-import dev.ayo.devinbridge.domain.StatusSnapshot;
-import dev.ayo.devinbridge.domain.TrackedSession;
+import dev.ayo.devinbridge.domain.*;
 import dev.ayo.devinbridge.github.GitHubClient;
 import dev.ayo.devinbridge.store.SessionStore;
 
@@ -167,15 +164,43 @@ public final class Orchestrator {
             return;
         }
 
+        boolean prAlreadyOpen = session.state() instanceof SessionState.PrOpened;
+
         StatusSnapshot snapshot;
         try {
             snapshot = devin.getStatus(devinSessionId);
         } catch (Exception e) {
-            failSession(session, "Devin API error: " + e.getMessage());
-            return;
+            if (!prAlreadyOpen) {
+                failSession(session, "Devin API error: " + e.getMessage());
+                return;
+            }
+            snapshot = new StatusSnapshot(devinSessionId, DevinStatus.UNKNOWN, null);
         }
 
         SessionState.Event event = toEvent(snapshot, session.createdAt(), now);
+        boolean completedViaMerge = false;
+
+        if (session.state() instanceof SessionState.PrOpened prOpened && snapshot.status() != DevinStatus.FINISHED) {
+            DevinStatus observedStatus = snapshot.status();
+            if (observedStatus == DevinStatus.EXPIRED) {
+                log.info(() -> "Issue #" + session.issueNumber() + ": Devin reports " + observedStatus
+                        + " while its PR is still open.");
+            }
+            PrStatus prStatus;
+            try {
+                prStatus = github.getPrStatus(prOpened.prUrl());
+            } catch (Exception e) {
+                failSession(session, "GitHub API error: " + e.getMessage());
+                return;
+            }
+            event = switch (prStatus) {
+                case MERGED -> new SessionState.Event.SessionFinished(prOpened.prUrl(), session.createdAt(), now);
+                case CLOSED -> new SessionState.Event.SessionFailed("Pull request was closed without merging", now);
+                case OPEN -> new SessionState.Event.PrDetected(prOpened.prUrl(), now);
+            };
+            completedViaMerge = prStatus == PrStatus.MERGED;
+        }
+
         SessionState next = SessionState.advance(session.state(), event);
         boolean prJustAppeared = isFirstPrSighting(session.state(), next);
         store.update(session.issueNumber(), next);
@@ -184,6 +209,20 @@ public final class Orchestrator {
             String prUrl = prUrlOf(next);
             github.postComment(session.issueNumber(),
                     "Devin opened a pull request for this issue: " + prUrl);
+        }
+
+        if (completedViaMerge) {
+            // Only on a confirmed PR merge
+            terminateDevinSession(devinSessionId, session.issueNumber());
+        }
+    }
+
+    private void terminateDevinSession(String devinSessionId, long issueNumber) {
+        try {
+            devin.terminateSession(devinSessionId);
+        } catch (Exception e) {
+            log.log(Level.WARNING, e, () -> "Failed to terminate Devin session " + devinSessionId
+                    + " for issue #" + issueNumber + " after PR merge");
         }
     }
 

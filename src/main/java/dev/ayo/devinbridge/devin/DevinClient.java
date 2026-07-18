@@ -20,4 +20,9 @@ public interface DevinClient {
      * Fetches the current status of a previously-created session.
      */
     StatusSnapshot getStatus(String sessionId);
+
+    /**
+     * Terminates a session.
+     */
+    void terminateSession(String sessionId);
 }

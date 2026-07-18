@@ -1,9 +1,14 @@
 package dev.ayo.devinbridge.github;
 
+import dev.ayo.devinbridge.domain.PrStatus;
 import org.junit.jupiter.api.Test;
 import org.kohsuke.github.GHIssue;
+import org.kohsuke.github.GHIssueState;
+import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -35,5 +40,54 @@ class Hub4jGitHubClientTest {
 
         org.junit.jupiter.api.Assertions.assertThrows(
                 GitHubApiException.class, () -> client.postComment(42, "body"));
+    }
+
+    @Test
+    void getPrStatusReturnsMergedWhenPullRequestIsMerged() throws Exception {
+        GHRepository repo = mock(GHRepository.class);
+        GHPullRequest pr = mock(GHPullRequest.class);
+        when(pr.isMerged()).thenReturn(true);
+        when(repo.getPullRequest(17)).thenReturn(pr);
+
+        Hub4jGitHubClient client = new Hub4jGitHubClient(repo);
+
+        assertEquals(PrStatus.MERGED, client.getPrStatus("https://github.com/acme/widgets/pull/17"));
+    }
+
+    @Test
+    void getPrStatusReturnsClosedWhenPullRequestIsClosedButNotMerged() throws Exception {
+        GHRepository repo = mock(GHRepository.class);
+        GHPullRequest pr = mock(GHPullRequest.class);
+        when(pr.isMerged()).thenReturn(false);
+        when(pr.getState()).thenReturn(GHIssueState.CLOSED);
+        when(repo.getPullRequest(17)).thenReturn(pr);
+
+        Hub4jGitHubClient client = new Hub4jGitHubClient(repo);
+
+        assertEquals(PrStatus.CLOSED, client.getPrStatus("https://github.com/acme/widgets/pull/17"));
+    }
+
+    @Test
+    void getPrStatusReturnsOpenWhenPullRequestIsStillOpen() throws Exception {
+        GHRepository repo = mock(GHRepository.class);
+        GHPullRequest pr = mock(GHPullRequest.class);
+        when(pr.isMerged()).thenReturn(false);
+        when(pr.getState()).thenReturn(GHIssueState.OPEN);
+        when(repo.getPullRequest(17)).thenReturn(pr);
+
+        Hub4jGitHubClient client = new Hub4jGitHubClient(repo);
+
+        assertEquals(PrStatus.OPEN, client.getPrStatus("https://github.com/acme/widgets/pull/17"));
+    }
+
+    @Test
+    void getPrStatusWrapsIoExceptionAsGitHubApiException() throws Exception {
+        GHRepository repo = mock(GHRepository.class);
+        when(repo.getPullRequest(17)).thenThrow(new java.io.IOException("network down"));
+
+        Hub4jGitHubClient client = new Hub4jGitHubClient(repo);
+
+        assertThrows(GitHubApiException.class,
+                () -> client.getPrStatus("https://github.com/acme/widgets/pull/17"));
     }
 }
