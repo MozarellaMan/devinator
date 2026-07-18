@@ -40,7 +40,7 @@ public record StatusView(List<SessionView> sessions, Map<String, Long> counts, M
     private static SessionView toView(TrackedSession t, Instant now) {
         long elapsed = Duration.between(t.createdAt(), now).toSeconds();
         return switch (t.state()) {
-            case SessionState.Queued q -> new SessionView(
+            case SessionState.Queued _ -> new SessionView(
                     t.issueNumber(), t.issueTitle(), t.repo(), "QUEUED",
                     t.createdAt(), null, null, elapsed, null);
             case SessionState.Running r -> new SessionView(
@@ -58,9 +58,18 @@ public record StatusView(List<SessionView> sessions, Map<String, Long> counts, M
         };
     }
 
-    public record SessionView(long issueNumber, String issueTitle, String repo, String state,
-                              Instant createdAt, String devinSessionId, String prUrl,
-                              long elapsedSeconds, String failureReason) {
+    public record SessionView(
+            long issueNumber,
+            String issueTitle,
+            String repo,
+            String state,
+            Instant createdAt,
+            String devinSessionId,
+            String prUrl,
+            long elapsedSeconds,
+            String failureReason
+    ) {
+
     }
 
     public record Metrics(long totalTracked, Double avgCompletedDurationSeconds) {

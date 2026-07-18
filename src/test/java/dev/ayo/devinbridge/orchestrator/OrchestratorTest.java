@@ -1,20 +1,17 @@
 package dev.ayo.devinbridge.orchestrator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import dev.ayo.devinbridge.devin.MockDevinClient;
 import dev.ayo.devinbridge.domain.SessionState;
 import dev.ayo.devinbridge.github.GitHubClient;
 import dev.ayo.devinbridge.store.SessionStore;
+import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Happy-path test using {@link MockDevinClient}: a labelled issue arrives via the
@@ -94,11 +91,6 @@ class OrchestratorTest {
 
     private static final class FakeGitHubClient implements GitHubClient {
         final List<PostedComment> commentsPosted = new ArrayList<>();
-
-        @Override
-        public List<Issue> listLabelledIssues(String label) {
-            return List.of();
-        }
 
         @Override
         public void postComment(long issueNumber, String body) {

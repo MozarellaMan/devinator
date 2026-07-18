@@ -9,9 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Stateful fake Devin, enabled via {@code MOCK_DEVIN=true}. Lets the whole system —
- * webhook, orchestrator, poller, dashboard — run end-to-end with no network calls.
- *
+ * Stateful fake Devin, enabled via {@code MOCK_DEVIN=true}.
  * <p>Each session advances one step per {@link #getStatus} call: {@code working} ->
  * {@code working} -> {@code finished} (with a fake PR url attached on the finishing
  * call). Session ids are locally minted, monotonically increasing strings so runs are
@@ -31,7 +29,7 @@ public final class MockDevinClient implements DevinClient {
 
     @Override
     public StatusSnapshot getStatus(String sessionId) {
-        int step = pollCounts.computeIfAbsent(sessionId, id -> new AtomicInteger(0))
+        int step = pollCounts.computeIfAbsent(sessionId, _ -> new AtomicInteger(0))
                 .getAndIncrement();
 
         // Two "working" polls to make the dashboard's Running state visible for a

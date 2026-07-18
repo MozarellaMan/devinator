@@ -1,17 +1,16 @@
 # --- build stage -----------------------------------------------------------
-FROM gradle:8.10-jdk21 AS build
+FROM gradle:9.6.1-jdk25 AS build
 WORKDIR /app
 
-# Cache dependency resolution separately from source changes.
-COPY build.gradle settings.gradle ./
+COPY build.gradle settings.gradle gradlew ./
 COPY gradle ./gradle
-RUN gradle dependencies --no-daemon || true
+RUN chmod +x gradlew && ./gradlew dependencies --no-daemon || true
 
 COPY src ./src
-RUN gradle jar --no-daemon
+RUN ./gradlew jar --no-daemon
 
 # --- runtime stage -----------------------------------------------------------
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 WORKDIR /app
 COPY --from=build /app/build/libs/devinbridge-1.0.0.jar app.jar
 

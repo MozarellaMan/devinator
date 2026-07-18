@@ -27,14 +27,14 @@ public sealed interface SessionState {
      */
     static SessionState advance(SessionState current, Event event) {
         return switch (current) {
-            case Queued q -> switch (event) {
+            case Queued _ -> switch (event) {
                 case Event.SessionStarted e -> new Running(e.devinSessionId(), e.now());
                 case Event.SessionFailed e -> new Failed(null, e.reason(), e.now());
                 default -> throw new IllegalStateTransition(current, event);
             };
 
             case Running r -> switch (event) {
-                case Event.StillRunning e -> new Running(r.devinSessionId(), r.started());
+                case Event.StillRunning _ -> new Running(r.devinSessionId(), r.started());
                 case Event.PrDetected e -> new PrOpened(r.devinSessionId(), e.prUrl(), e.now());
                 case Event.SessionFinished e -> new Completed(
                         r.devinSessionId(), e.prUrl(), Duration.between(e.since(), e.now())
@@ -51,8 +51,7 @@ public sealed interface SessionState {
                 case Event.SessionFailed e -> new Failed(p.devinSessionId(), e.reason(), e.now());
                 default -> throw new IllegalStateTransition(current, event);
             };
-            case Completed ignored -> throw new IllegalStateTransition(current, event);
-            case Failed ignored -> throw new IllegalStateTransition(current, event);
+            case Completed _, Failed _ -> throw new IllegalStateTransition(current, event);
         };
     }
 
@@ -61,21 +60,18 @@ public sealed interface SessionState {
      */
     default String label() {
         return switch (this) {
-            case Queued q -> "QUEUED";
-            case Running r -> "RUNNING";
-            case PrOpened p -> "PR_OPENED";
-            case Completed c -> "COMPLETED";
-            case Failed f -> "FAILED";
+            case Queued _ -> "QUEUED";
+            case Running _ -> "RUNNING";
+            case PrOpened _ -> "PR_OPENED";
+            case Completed _ -> "COMPLETED";
+            case Failed _ -> "FAILED";
         };
     }
 
     default boolean isTerminal() {
         return switch (this) {
-            case Completed c -> true;
-            case Failed f -> true;
-            case Queued q -> false;
-            case Running r -> false;
-            case PrOpened p -> false;
+            case Completed _, Failed _ -> true;
+            case Queued _, Running _, PrOpened _ -> false;
         };
     }
 

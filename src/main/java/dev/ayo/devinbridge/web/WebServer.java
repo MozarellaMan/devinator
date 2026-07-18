@@ -13,10 +13,6 @@ import io.javalin.http.Context;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * HTTP surface: the GitHub webhook receiver, the dashboard's status feed, a health
- * check, and the static dashboard itself (resources/public).
- */
 public final class WebServer {
 
     private static final Logger log = Logger.getLogger(WebServer.class.getName());
@@ -46,11 +42,12 @@ public final class WebServer {
     }
 
     public void start(int port) {
-        app = Javalin.create(config -> config.staticFiles.add("/public"))
-                .post("/webhook/github", this::handleWebhook)
-                .get("/status", this::handleStatus)
-                .get("/health", ctx -> ctx.result("ok"))
-                .start(port);
+        app = Javalin.create(config -> {
+            config.staticFiles.add("/public");
+            config.routes.post("/webhook/github", this::handleWebhook);
+            config.routes.get("/status", this::handleStatus);
+            config.routes.get("/health", ctx -> ctx.result("ok"));
+        }).start(port);
     }
 
     public void stop() {

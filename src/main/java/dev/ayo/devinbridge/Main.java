@@ -26,7 +26,7 @@ public final class Main {
     private Main() {
     }
 
-    public static void main(String[] args) {
+    static void main() {
         Config config = Config.fromEnv();
         log.info(() -> "Starting devinbridge for repo=" + config.targetRepo()
                 + " mockDevin=" + config.mockDevin());
@@ -46,7 +46,7 @@ public final class Main {
         );
 
         webServer.start(config.port());
-        orchestrator.start(config.targetRepo());
+        orchestrator.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("Shutting down");
@@ -60,7 +60,7 @@ public final class Main {
     private static Orchestrator createDevinSessionOrchestrator(Config config, SessionStore store) {
         DevinClient devinClient = config.mockDevin()
                 ? new MockDevinClient()
-                : new HttpDevinClient(config.devinApiUrl(), config.devinApiKey());
+                : new HttpDevinClient(config.devinApiUrl(), config.devinApiKey(), config.devinOrgId());
 
         GitHubClient githubClient = new Hub4jGitHubClient(config.targetRepo(), config.githubToken());
 
@@ -79,6 +79,7 @@ public final class Main {
     record Config(
             String devinApiUrl,
             String devinApiKey,
+            String devinOrgId,
             boolean mockDevin,
             String githubToken,
             String targetRepo,
@@ -91,10 +92,16 @@ public final class Main {
             String targetRepo = mock
                     ? env("TARGET_REPO", "mock-org/mock-repo")
                     : requireEnv("TARGET_REPO");
+            // The Devin v3 API scopes every session under an org; there's no org
+            // concept to fall back on in mock mode since MockDevinClient never calls out.
+            String devinOrgId = mock
+                    ? env("DEVIN_ORG_ID", "org-mock")
+                    : requireEnv("DEVIN_ORG_ID");
 
             return new Config(
                     env("DEVIN_API_URL", "https://api.devin.ai"),
                     env("DEVIN_API_KEY", ""),
+                    devinOrgId,
                     mock,
                     env("GITHUB_TOKEN", ""),
                     targetRepo,

@@ -23,10 +23,6 @@ import java.util.logging.Logger;
  * polls them to completion, and reports PR links back to GitHub. This is the only
  * class that drives {@link SessionState#advance} in response to real events, and the
  * only class that talks to both {@link DevinClient} and {@link GitHubClient}.
- *
- * <p>Two triggers feed the same entry point, {@link #onIssueEvent}: the webhook
- * (low-latency push) and {@link #scanIssues} (a 60s pull safety net for missed or
- * failed webhook deliveries). Both are idempotent via {@link SessionStore#register}.
  */
 public final class Orchestrator {
 
@@ -57,7 +53,7 @@ public final class Orchestrator {
 
     private static SessionState.Event toEvent(StatusSnapshot snapshot, Instant since, Instant now) {
         if (snapshot.status() == DevinStatus.EXPIRED) {
-            return new SessionState.Event.SessionFailed("Devin session expired", now);
+            return new SessionState.Event.SessionFailed("Devin session ended without finishing", now);
         }
         if (snapshot.status() == DevinStatus.FINISHED) {
             return new SessionState.Event.SessionFinished(snapshot.prUrl(), since, now);
@@ -78,9 +74,7 @@ public final class Orchestrator {
         return switch (state) {
             case SessionState.Running r -> r.devinSessionId();
             case SessionState.PrOpened p -> p.devinSessionId();
-            case SessionState.Queued q -> null;
-            case SessionState.Completed c -> null;
-            case SessionState.Failed f -> null;
+            case SessionState.Queued _, SessionState.Completed _, SessionState.Failed _ -> null;
         };
     }
 
@@ -96,15 +90,14 @@ public final class Orchestrator {
         return "Fix issue #" + issueNumber + " (\"" + issueTitle + "\") in the " + repo
                 + " GitHub repository. Investigate the issue, implement a fix, and open "
                 + "a pull request against the default branch with a clear description "
-                + "of the change and how it resolves the issue.";
+                + "of the change and how it resolves the issue. Use red/green TDD.";
     }
 
     /**
-     * Starts the poll (every 15s) and fallback issue-scan (every 60s) loops.
+     * Starts the poll loop (every 15s).
      */
-    public void start(String repo) {
+    public void start() {
         scheduler.scheduleWithFixedDelay(this::poll, 15, 15, TimeUnit.SECONDS);
-        scheduler.scheduleWithFixedDelay(() -> scanIssues(repo), 60, 60, TimeUnit.SECONDS);
     }
 
     public void shutdown() {
@@ -112,8 +105,8 @@ public final class Orchestrator {
     }
 
     /**
-     * Entry point for both triggers. If the issue carries {@link #TARGET_LABEL} and
-     * isn't already tracked, registers it as {@code Queued}, kicks off a Devin
+     * Entry point for the webhook trigger. If the issue carries {@link #TARGET_LABEL}
+     * and isn't already tracked, registers it as {@code Queued}, kicks off a Devin
      * session, and immediately advances it to {@code Running}.
      */
     public void onIssueEvent(long issueNumber, String issueTitle, List<String> labels, String repo) {
@@ -132,13 +125,16 @@ public final class Orchestrator {
             String prompt = buildPrompt(issueNumber, issueTitle, repo);
             String sessionId = devin.createSession(prompt, repo);
             SessionState running = SessionState.advance(
-                    queued, new SessionState.Event.SessionStarted(sessionId, clock.instant()));
+                    queued,
+                    new SessionState.Event.SessionStarted(sessionId, clock.instant())
+            );
             store.update(issueNumber, running);
             log.info(() -> "Started Devin session " + sessionId + " for issue #" + issueNumber);
         } catch (Exception e) {
             log.log(Level.WARNING, e, () -> "Failed to start Devin session for issue #" + issueNumber);
             SessionState failed = SessionState.advance(
-                    queued, new SessionState.Event.SessionFailed(e.getMessage(), clock.instant()));
+                    queued, new SessionState.Event.SessionFailed(e.getMessage(), clock.instant())
+            );
             store.update(issueNumber, failed);
         }
     }
@@ -154,7 +150,6 @@ public final class Orchestrator {
             try {
                 pollOne(session);
             } catch (Exception e) {
-                // One session's failure must never stop the others from being polled.
                 log.log(Level.WARNING, e, () -> "Poll failed for issue #" + session.issueNumber());
             }
         }
@@ -163,7 +158,7 @@ public final class Orchestrator {
     private void pollOne(TrackedSession session) {
         String devinSessionId = devinSessionIdOf(session.state());
         if (devinSessionId == null) {
-            return; // Queued sessions with no Devin id yet (shouldn't normally happen)
+            return; // Queued sessions with no Devin id yet
         }
 
         Instant now = clock.instant();
@@ -197,21 +192,5 @@ public final class Orchestrator {
                 session.state(), new SessionState.Event.SessionFailed(reason, clock.instant()));
         store.update(session.issueNumber(), next);
         log.warning(() -> "Issue #" + session.issueNumber() + " failed: " + reason);
-    }
-
-    /**
-     * Fallback pull trigger: re-scans the repo for {@link #TARGET_LABEL}-labelled
-     * issues every 60s, in case a webhook delivery was missed or failed. Registration
-     * is idempotent, so already-tracked issues are silently skipped.
-     */
-    public void scanIssues(String repo) {
-        try {
-            List<GitHubClient.Issue> issues = github.listLabelledIssues(TARGET_LABEL);
-            for (GitHubClient.Issue issue : issues) {
-                onIssueEvent(issue.number(), issue.title(), issue.labels(), repo);
-            }
-        } catch (Exception e) {
-            log.log(Level.WARNING, e, () -> "Fallback issue scan failed");
-        }
     }
 }
