@@ -82,7 +82,7 @@ MOCK_DEVIN=true docker compose up --build  # offline mock mode
 | `GITHUB_TOKEN`          | real mode | —                                 | GitHub token for posting the PR-link comment.           |
 | `TARGET_REPO`           | real mode | `mock-org/mock-repo` in mock mode | Repo (`owner/name`) to watch.                           |
 | `GITHUB_WEBHOOK_SECRET` | no        | — (verification off)              | Enables `X-Hub-Signature-256` HMAC checking.            |
-| `DEVIN_TIMEOUT_MINUTES` | no        | `30`                              | When to timeout a stuck Devin session.                  |
+| `DEVIN_TIMEOUT_MINUTES` | no        | `60`                              | When to timeout a stuck Devin session.                  |
 | `PORT`                  | no        | `8080`                            | HTTP listen port.                                       |
 
 ## HTTP endpoints

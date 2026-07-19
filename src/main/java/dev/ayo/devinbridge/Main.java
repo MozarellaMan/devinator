@@ -106,7 +106,7 @@ public final class Main {
                     env("GITHUB_TOKEN", ""),
                     targetRepo,
                     env("GITHUB_WEBHOOK_SECRET", null),
-                    Long.parseLong(env("DEVIN_TIMEOUT_MINUTES", "30")),
+                    Long.parseLong(env("DEVIN_TIMEOUT_MINUTES", "60")),
                     Integer.parseInt(env("PORT", "8080"))
             );
         }
